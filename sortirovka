@@ -1,0 +1,71 @@
+def mashina(r):
+    r = 1
+    config = configparser.ConfigParser()
+    config.read('configbot.ini')
+    pap = config.get("scaner_settings", "report_path")
+    lst = os.listdir(pap)
+    name = config.get("scaner_settings", "grup").split()
+    for i in name:
+        if not i in lst:
+            os.mkdir(pap + '/' + i)
+    i = len(lst) - 1
+    while i >= 0:
+        i = i - 1
+        if os.path.isdir(lst[i]):
+            del lst[i]
+    i = len(lst)
+    for k in range(0, i):
+        for j in range(0, len(name)):
+            if name[j] in lst[k]:
+                f = pap + '/' + lst[k]
+                shutil.move(f, pap + '/' + name[j])
+    lst = os.listdir(pap)
+    i = len(lst)
+    for k in range(0, i):
+        for j in range(0, len(name)):
+            if name[j] in lst[k]:
+                lste = os.listdir(pap + '/' + name[j])
+                nam = config.get("name", name[j]).split()
+                for i in nam:
+                    if not i in lste:
+                        os.mkdir(pap + '/' + name[j] + '/' + i)
+                q = len(lste) - 1
+                while q >= 0:
+                    q = q - 1
+                    if os.path.isdir(lste[q]):
+                        del lste[q]
+                q = len(lste)
+                for w in range(0, q):
+                    for e in range(0, len(nam)):
+                        if nam[e] in lste[w]:
+                            f = pap + '/' + name[j] + "/" + lste[w]
+                            shutil.move(f, pap + '/' + name[j] + "/" + nam[e])
+    lst = os.listdir(pap)
+    i = len(lst)
+    for k in range(0, i):
+        for j in range(0, len(name)):
+            if name[j] in lst[k]:
+                lsto = os.listdir(pap + '/' + name[j])
+                y = len(lsto)
+                for lol in range(0, y):
+                    for s in range(0, len(nam)):
+                        if nam[s] in lsto[lol]:
+                            lste = os.listdir(pap + '/' + name[j] + "/" + nam[s])
+                            nama = config.get("hw", "h").split()
+                            for i in nama:
+                                if not i in lste:
+                                    os.mkdir(pap + '/' + name[j] + '/' + nam[s] + '/' + i)
+                            q = len(lste) - 1
+                            while q >= 0:
+                                q = q - 1
+                                if os.path.isdir(lste[q]):
+                                    del lste[q]
+                            q = len(lste)
+                            for w in range(0, q):
+                                for e in range(0, len(nama)):
+                                    if nama[e] in lste[w]:
+                                        f = pap + '/' + name[j] + "/" + nam[s] + "/" + lste[w]
+                                        shutil.move(f, pap + '/' + name[j] + "/" + nam[s] + "/" + nama[e])
+            
+
+    print("gopa")
