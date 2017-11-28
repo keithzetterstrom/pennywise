@@ -1,0 +1,186 @@
+#-*- coding: utf-8 -*-
+import telebot
+import requests
+import filework
+import json
+import configparser
+import os
+import sort
+
+path = "configbot.ini"
+avtodict = {}
+
+def get_config(path):
+    config = configparser.ConfigParser()
+    config.read(path)
+    return config
+
+
+def get_setting(path, section, setting):
+    config = get_config(path)
+    value = config.get(section, setting)
+    return value
+
+
+def json_read (fway):
+    with open(fway, "r") as fil:
+        fname = json.load(fil)
+    return fname
+
+
+def check_user(funk):
+    def key(message):
+        lst = avtodict.keys()
+        if message.chat.last_name in lst:
+            funk(message)
+        else:
+            start(message)
+    return key
+
+
+TOKEN = get_setting(path, "main_settings", "token")
+bot = telebot.TeleBot(TOKEN)
+print(bot.get_me())
+
+
+@bot.message_handler(commands=['start'])
+
+def start(message):
+    sent = bot.send_message(message.chat.id, 'Введите логин и пароль через пробел.')
+    bot.register_next_step_handler(sent, authorization)
+
+
+def authorization(message):
+    login_password = message.text
+    username = message.chat.last_name
+    #print(username)
+    lst = login_password.split(" ")
+    try:
+        if json_read(get_setting(path, "info_from_json", "logpass"))[lst[0]] == lst[1]:
+            bot.send_message(message.chat.id, "Добро пожаловать! Для выхода наберите /stop.")
+            avtodict[username] = lst[0]
+            #print(avtodict)
+        else:
+            bot.send_message(message.chat.id, "Неверный логин или пароль.")
+            start(message)
+    except IndexError:
+        bot.send_message(message.chat.id, "Неверный логин или пароль.")
+        start(message)
+    except KeyError:
+        bot.send_message(message.chat.id, "Неверный логин или пароль.")
+        start(message)
+
+
+@bot.message_handler(commands=["stop"])
+
+def stop(message):
+    username = message.chat.last_name
+    try:
+        name = avtodict.pop(username)
+        bot.send_message(message.chat.id, "Вы покинули галактику. До скорой встречи, {0}.".format(name))
+    except KeyError:
+        bot.send_message(message.chat.id, "Вы кто? Воспользуйтесь командой /start.")
+
+
+@bot.message_handler(commands=['help'])
+@check_user
+
+def help(message):
+    user_m = telebot.types.ReplyKeyboardMarkup(True, True)
+    user_m.row("/clawn", "/timetable", "/homework", "/presentation")
+    bot.send_message(message.from_user.id, "Выбирай.", reply_markup=user_m)
+    #print(message.chat.last_name)
+    #print(avtodict)
+
+
+@bot.message_handler(commands=['clawn'])
+@check_user
+
+def clawn(message):
+    #poto = open("penny.jpg", 'rb')
+    bot.send_photo(message.chat.id, "AgADAgADmagxGwz6iEh97psnNvZQMFjgDw4ABDbau-4au5AdYBkDAAEC") #Стремная фотка клоуна
+    bot.send_audio(message.chat.id, "CQADAgADNAEAAhVhoUiEArev1JmRTQI") #Музыка из фильма Оно 2017
+
+
+@bot.message_handler(commands=['timetable'])
+@check_user
+
+def timetable1(message):
+    grup = bot.send_message(message.chat.id, "Назови группу (используй латинские символы)")
+    bot.register_next_step_handler(grup, timetable2) #Ответ пользователя обрабатывается следующей функцией
+
+
+def timetable2(message):
+    grup = message.text
+    f = grup.lower()
+    g = json_read(get_setting(path, "info_from_json", "timetable")).get(f)
+    if g:
+        bot.send_message(message.chat.id, "День проведения занятий - {0}, аудитория {1}. Не опаздывай!".format(g.get("Day"), g.get("Classroom")))
+        bot.send_sticker(message.chat.id, "CAADAgADiQADECECENB_v-5nGHXPAg") #Тоже динозавр и дверь
+    else:
+        bot.send_message(message.chat.id, "Сначала научись правильно вводить данные!")
+        bot.send_sticker(message.chat.id, "CAADAgADgwADECECENkH6A7rN755Ag") #Динозавр разочарованный
+
+
+@bot.message_handler(commands=["homework"])
+@check_user
+
+def homework1(message):
+    hw = bot.send_message(message.chat.id, "Запиши цифрами номер домашнего задания.")
+    bot.register_next_step_handler(hw, homework2)
+
+
+def homework2(message):
+    try:
+        hw = json_read(get_setting(path, "info_from_json", "homework") + message.text + ".json")
+        name = avtodict.get(message.chat.last_name) #Определяет логин пользователя
+        g = hw.get(name)
+        if g == "1":
+            bot.send_message(message.chat.id, "Дз сдано.")
+        elif g == "0":
+            bot.send_message(message.chat.id, "Дз не сдано.")
+        else:
+            bot.send_message(message.chat.id, "Информации нет.")
+    except FileNotFoundError:
+        bot.send_message(message.chat.id, "Неверный ввод данных.")
+
+
+@bot.message_handler(commands=["presentation"])
+@check_user
+
+def presentation1(message):
+    pr = bot.send_message(message.chat.id, "Введите (цифрами) номер нужной вам презентации.")
+    bot.register_next_step_handler(pr, presentation2)
+
+
+def presentation2(message):
+    number = message.text
+    lst = os.listdir(get_setting(path, "presentation", "way"))
+    for i in range(len(lst)):
+        if number in lst[i]:
+            presentation = open(get_setting(path, "presentation", "way") + "/" + lst[i], "rb")
+            bot.send_document(message.chat.id, presentation)
+        else:
+            bot.send_message(message.chat.id, "Что-то не так.")
+
+
+@bot.message_handler(content_types=['document'])
+@check_user
+
+def save_documents(message):
+    bot.send_message(message.chat.id, " wtf! ")
+    fileinfo = bot.get_file(message.document.file_id)
+    filename = message.document.file_name
+    if not get_setting(path, "file_form", "form") in filename:
+        bot.send_message(message.chat.id, "Неверный формат файла.")
+    else:
+        file = requests.get('https://api.telegram.org/file/bot{0}/{1}'.format(TOKEN, fileinfo.file_path))
+        way = get_setting(path, "scaner_settings", "report_path") + filename
+        with open(way, "wb") as code:
+            code.write(file.content)
+        print("yes", filename)
+        sort.mashina(path)
+
+
+if __name__ == '__main__':
+    bot.polling(none_stop=True)
