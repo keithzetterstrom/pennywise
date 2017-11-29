@@ -120,6 +120,7 @@ def timetable2(message):
     else:
         bot.send_message(message.chat.id, "Сначала научись правильно вводить данные!")
         bot.send_sticker(message.chat.id, "CAADAgADgwADECECENkH6A7rN755Ag") #Динозавр разочарованный
+    bot.send_message(message.chat.id, get_setting(path, "other", "be_or_not_to_be")) #Будет или не будет занятие
 
 
 @bot.message_handler(commands=["homework"])
